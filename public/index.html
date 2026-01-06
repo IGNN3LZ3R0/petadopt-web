@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetAdopt - Verificación de Cuenta</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <!-- Logo/Icono -->
+            <div class="icon-container">
+                <svg class="icon-paw" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14.25 10.5c.97 0 1.75-.78 1.75-1.75s-.78-1.75-1.75-1.75-1.75.78-1.75 1.75.78 1.75 1.75 1.75zm0 0"/>
+                    <path d="M9.75 10.5c.97 0 1.75-.78 1.75-1.75s-.78-1.75-1.75-1.75-1.75.78-1.75 1.75.78 1.75 1.75 1.75zm0 0"/>
+                    <path d="M12 14.25c1.24 0 2.25-1.01 2.25-2.25S13.24 9.75 12 9.75 9.75 10.76 9.75 12s1.01 2.25 2.25 2.25zm0 0"/>
+                    <path d="M16.5 14.25c.97 0 1.75-.78 1.75-1.75s-.78-1.75-1.75-1.75-1.75.78-1.75 1.75.78 1.75 1.75 1.75zm0 0"/>
+                    <path d="M7.5 14.25c.97 0 1.75-.78 1.75-1.75s-.78-1.75-1.75-1.75-1.75.78-1.75 1.75.78 1.75 1.75 1.75zm0 0"/>
+                    <path d="M12 17.25c2.07 0 3.75-1.68 3.75-3.75 0-.41-.34-.75-.75-.75s-.75.34-.75.75c0 1.24-1.01 2.25-2.25 2.25s-2.25-1.01-2.25-2.25c0-.41-.34-.75-.75-.75s-.75.34-.75.75c0 2.07 1.68 3.75 3.75 3.75z"/>
+                </svg>
+            </div>
+
+            <h1 id="title">PetAdopt</h1>
+            <p id="description" class="subtitle">Verificando tu cuenta...</p>
+
+            <!-- Loader -->
+            <div id="loader" class="loader-container">
+                <div class="loader"></div>
+            </div>
+
+            <!-- Estado -->
+            <div id="status" style="display: none;"></div>
+
+            <!-- Contenido dinámico -->
+            <div id="content"></div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>© 2026 PetAdopt - Dando amor a mascotas</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔑 REEMPLAZA CON TUS CREDENCIALES DE SUPABASE
+        const SUPABASE_URL = 'TU_SUPABASE_URL';
+        const SUPABASE_KEY = 'TU_SUPABASE_ANON_KEY';
+
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Elementos del DOM
+        const title = document.getElementById('title');
+        const description = document.getElementById('description');
+        const loader = document.getElementById('loader');
+        const statusDiv = document.getElementById('status');
+        const contentDiv = document.getElementById('content');
+
+        // Detectar tipo de acción desde la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const type = urlParams.get('type');
+        const accessToken = urlParams.get('access_token');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+
+        // Función para mostrar estado
+        function showStatus(type, message) {
+            loader.style.display = 'none';
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+
+        // Función para redireccionar a la app
+        function redirectToApp(delay = 3000) {
+            contentDiv.innerHTML = `
+                <p class="redirect-message">
+                    Redirigiendo a la aplicación en <span id="countdown">3</span> segundos...
+                </p>
+            `;
+
+            let count = 3;
+            const countdownEl = document.getElementById('countdown');
+            
+            const countdownInterval = setInterval(() => {
+                count--;
+                countdownEl.textContent = count;
+                if (count <= 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+
+            setTimeout(() => {
+                // Intentar abrir la app con deep link
+                window.location.href = 'petadopt://auth/callback';
+                
+                // Si no funciona, mostrar instrucciones
+                setTimeout(() => {
+                    contentDiv.innerHTML = `
+                        <div class="manual-instructions">
+                            <p>Si la aplicación no se abrió automáticamente:</p>
+                            <button onclick="window.location.href='petadopt://auth/callback'" class="btn">
+                                Abrir PetAdopt
+                            </button>
+                        </div>
+                    `;
+                }, 1000);
+            }, delay);
+        }
+
+        // Procesar verificación de email
+        async function handleEmailVerification() {
+            if (error) {
+                title.textContent = '❌ Error';
+                description.textContent = errorDescription || 'No se pudo verificar tu cuenta';
+                showStatus('error', error);
+                return;
+            }
+
+            if (accessToken) {
+                // Verificar sesión con Supabase
+                try {
+                    const { data, error } = await _supabase.auth.getSession();
+                    
+                    if (error) throw error;
+
+                    title.textContent = '✅ ¡Cuenta Verificada!';
+                    description.textContent = 'Tu cuenta ha sido verificada exitosamente';
+                    showStatus('success', '¡Bienvenido a PetAdopt!');
+                    redirectToApp();
+                } catch (err) {
+                    console.error('Error:', err);
+                    title.textContent = '❌ Error';
+                    description.textContent = 'Ocurrió un error al verificar tu cuenta';
+                    showStatus('error', err.message);
+                }
+            } else {
+                title.textContent = 'PetAdopt';
+                description.textContent = 'Bienvenido';
+                loader.style.display = 'none';
+                contentDiv.innerHTML = `
+                    <p class="info-text">
+                        Para verificar tu cuenta o restablecer tu contraseña, 
+                        por favor revisa tu email.
+                    </p>
+                    <button onclick="window.location.href='petadopt://auth/callback'" class="btn">
+                        Abrir PetAdopt
+                    </button>
+                `;
+            }
+        }
+
+        // Ejecutar al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            if (type === 'signup' || type === 'email_confirmation' || type === 'recovery') {
+                handleEmailVerification();
+            } else {
+                handleEmailVerification();
+            }
+        });
+    </script>
+</body>
+</html>

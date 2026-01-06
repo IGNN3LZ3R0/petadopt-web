@@ -1,0 +1,23 @@
+{
+  "name": "backendprueba2",
+  "version": "1.0.0",
+  "description": "Sitio web auxiliar para verificación de email y reseteo de contraseña de PetAdopt",
+  "main": "server.js",
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": [
+    "petadopt",
+    "email-verification",
+    "password-reset"
+  ],
+  "author": "Tu Nombre",
+  "license": "MIT"
+}
